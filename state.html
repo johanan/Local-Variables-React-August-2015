@@ -24,26 +24,16 @@
         addUser: function (user) {
             var newState = this.state.users.slice();
             newState.push(user);
-            var newPrevious = this.state.undo.slice();
-            newPrevious.push(this.state.users);
-            this.setState({ users: newState, undo: newPrevious });
+            this.setState({ users: newState });
         },
         removeUser: function (index) {
             var newState = this.state.users.slice();
             newState.splice(index, 1);
-            var newPrevious = this.state.undo.slice();
-            newPrevious.push(this.state.users);
-            this.setState({ users: newState, undo: newPrevious });
+            this.setState({ users: newState });
         },
         //handlers
         handleLiClick: function (index) {
             this.removeUser(index);
-        },
-        undoClick: function () {
-			var newPrevious = this.state.undo.slice();
-			var newUsers = newPrevious.pop();
-			if (newUsers)
-				this.setState({ users: newUsers, undo: newPrevious  });
         },
         //utility
         mapUser: function (user, index) {
@@ -54,15 +44,13 @@
         //lifecycle
         getInitialState: function () {
             var users = this.props.initialUsers;
-            return { users: users, undo: [] };
+            return { users: users };
         },
         propTypes: {
             initialUsers: React.PropTypes.array.isRequired
         },
         render: function () {
-            return React.DOM.ul(null, [
-                React.DOM.button({ onClick: this.undoClick, disabled: this.state.undo.length === 0 }, "Undo"),
-				this.state.users.map(this.mapUser)]);
+            return React.DOM.ul(null, [this.state.users.map(this.mapUser)]);
         }
     });
 
