@@ -1,0 +1,46 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Functional!</title>
+</head>
+<body>
+    <script>
+        var Counter = function Counter() {
+            return {
+                count: 0,
+                next: function () {this.count++; return this.count;}
+            }
+        };
+
+        function functionalNext(count) {
+            return count + 1;
+        }
+
+        function TestOOPAndFunctional() {
+            var oopCounter = new Counter();
+            console.log(oopCounter.next());
+            console.log(oopCounter.next());
+            console.log(oopCounter.next());
+
+            console.log(functionalNext(0));
+            console.log(functionalNext(0));
+            console.log(functionalNext(0));
+        }
+
+        function Slice() {
+            var array = [1, 2, 3, 4, 5];
+            console.log(array.slice(0, 3));
+            console.log(array.slice(0, 3));
+            console.log(array.slice(0, 3));
+        }
+
+        function Splice() {
+            var array = [1, 2, 3, 4, 5];
+            console.log(array.splice(0, 3));
+            console.log(array.splice(0, 3));
+            console.log(array.splice(0, 3));
+        }
+    </script>
+</body>
+</html>

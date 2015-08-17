@@ -1,0 +1,75 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>State!</title>
+    <script src="build/react.js"></script>
+    <script src="build/JSXTransformer.js"></script>
+    <script src="build/md5.js"></script>
+</head>
+<body>
+    <div id="react-root"></div>
+<script type="text/javascript">
+    var UserImage = React.createClass({
+        buildGravatarURL: function(userName, size){
+            return "http://www.gravatar.com/avatar/" + md5(userName) + "?d=retro&s=" + size;
+        },
+        render: function () {
+            return React.DOM.img({ title: this.props.userName, alt: this.props.userName, src: this.buildGravatarURL(this.props.userName, this.props.size)}, null);
+        }
+    });
+
+    var UserList = React.createClass({
+        //actions
+        addUser: function (user) {
+            var newState = this.state.users.slice();
+            newState.push(user);
+            var newPrevious = this.state.undo.slice();
+            newPrevious.push(this.state.users);
+            this.setState({ users: newState, undo: newPrevious });
+        },
+        removeUser: function (index) {
+            var newState = this.state.users.slice();
+            newState.splice(index, 1);
+            var newPrevious = this.state.undo.slice();
+            newPrevious.push(this.state.users);
+            this.setState({ users: newState, undo: newPrevious });
+        },
+        //handlers
+        handleLiClick: function (index) {
+            this.removeUser(index);
+        },
+        undoClick: function () {
+			var newPrevious = this.state.undo.slice();
+			var newUsers = newPrevious.pop();
+			if (newUsers)
+				this.setState({ users: newUsers, undo: newPrevious  });
+        },
+        //utility
+        mapUser: function (user, index) {
+            return React.DOM.li({ key: index, onClick: this.handleLiClick.bind(this, index) },
+                [React.createElement(UserImage, { userName: user, size: "100" }),
+                user]);
+        },
+        //lifecycle
+        getInitialState: function () {
+            var users = this.props.initialUsers;
+            return { users: users, undo: [] };
+        },
+        propTypes: {
+            initialUsers: React.PropTypes.array.isRequired
+        },
+        render: function () {
+            return React.DOM.ul(null, [
+                React.DOM.button({ onClick: this.undoClick, disabled: this.state.undo.length === 0 }, "Undo"),
+				this.state.users.map(this.mapUser)]);
+        }
+    });
+
+    var root = React.render(React.createElement(UserList, { initialUsers: ["josh"] }), document.getElementById("react-root"));
+
+	setTimeout(function () { root.addUser("" + new Date()); }, 1000)
+    setInterval(function () { root.addUser("" + new Date()); }, 10000);
+</script>
+</body>
+</html>

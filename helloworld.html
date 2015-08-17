@@ -1,0 +1,32 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Hello React!</title>
+    <script src="build/react.js"></script>
+    <script src="build/JSXTransformer.js"></script>
+</head>
+<body>
+<div id="react-root"></div>
+
+<script type="text/jsx">
+    var Hello = React.createClass({
+        render: function(){
+            return <h1>Hello, {this.props.name}!</h1>;
+        }
+    });
+
+    //React.render(<Hello name="React JSX"/>, document.getElementById('react-root'));
+</script>
+
+<script type="text/javascript">
+    var HelloJS = React.createClass({
+        render: function () {
+            return React.DOM.h1({id: "hellojs", className: "hello"}, ["Hello, ", this.props.name, "!"]);
+        }
+    });
+
+    React.render(React.createElement(HelloJS, { name: "ReactJS" }), document.getElementById('react-root'));
+</script>
+</body>
+</html>

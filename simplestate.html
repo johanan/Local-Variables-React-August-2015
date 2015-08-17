@@ -1,0 +1,38 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Simple State!</title>
+    <script src="build/react.js"></script>
+    <script src="build/JSXTransformer.js"></script>
+</head>
+<body>
+    <div id="react-root"></div>
+
+    <script>
+        var Incrementer = React.createClass({
+            getInitialState: function () {
+                return { count: 0 };
+            },
+            increment: function () {
+                var incremented = this.state.count + 1;
+                this.setState({ count: incremented });
+            },
+            decrement: function(){
+                var decremented = this.state.count - 1;
+                this.setState({ count: decremented });
+            },
+            render: function () {
+                return React.DOM.div(null, [
+                    this.state.count,
+                    React.DOM.button({ onClick: this.increment }, 'Increment'),
+                    React.DOM.button({ onClick: this.decrement }, 'Decrement')
+                ]);
+            }
+        });
+
+        var root = React.render(React.createElement(Incrementer, null), document.getElementById("react-root"));
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,290 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Flux!</title>
+    <script src="build/react.js"></script>
+    <script src="build/JSXTransformer.js"></script>
+    <script src="build/q.js"></script>
+    <script src="build/immutable.js"></script>
+	<script src="build/md5.js"></script>
+</head>
+<body>
+    <div id="react-root"></div>
+	<script>
+        "use strict";
+
+        //Flux stuff
+
+        //action constants
+        const ADD_COMMENT = "ADD_COMMENT";
+        const ADD_COMMENT_SUCCESS = "ADD_COMMENT_SUCCESS";
+        const ADD_COMMENT_FAIL = "ADD_COMMENT_FAIL";
+        const REMOVE_COMMENT = "REMOVE_COMMENT";
+        const TYPING = "TYPING";
+        const PENDING = "PENDING";
+
+        //actions
+        function addCommentSuccess(comment, context) {
+            return {
+                type: ADD_COMMENT_SUCCESS,
+                comment: comment,
+                context: context
+            };
+        }
+
+        function addCommentFail(errors, comment, context) {
+            return {
+                type: ADD_COMMENT_FAIL,
+                errors: errors,
+                comment: comment,
+                context: context
+            };
+        }
+       
+        function addComment(comment, context) {
+            return Q.Promise(function(resolve, reject, notify){
+                //cannot send a notify in same event loop
+                setTimeout(function(){
+                    notify(pending(context));
+                }, 0);
+                setTimeout(function () {
+                    if (comment.comment === "" || comment.user === "") {
+                        resolve(addCommentFail(["You need a comment and/or user"], comment, context));
+                    }
+                    else {
+                        resolve(addCommentSuccess(comment, context));
+                    }
+                }, 2000);
+
+            });
+            
+        }
+
+        function pending(context) {
+            return {
+                type: PENDING,
+                context: context
+            };
+        }
+
+
+        function removeComment(index) {
+            return {
+                type: REMOVE_COMMENT,
+                index: index
+            };
+        }
+
+        function typing(field, value){
+            return {
+                type: TYPING,
+                value: value,
+                field: field
+            };
+        }
+
+        //our stores
+        function comments(state, action) {
+            switch (action.type) {
+                case ADD_COMMENT_SUCCESS:
+                    return state.push(action.comment);
+                case REMOVE_COMMENT:
+                    return state.splice(action.index, 1);
+                default:
+                    return state;
+            }
+        }
+
+        function form(state, action) {
+            switch (action.type) {
+                case ADD_COMMENT_FAIL:
+                    if (action.context === 'form') {
+                        return state.withMutations(function (s) {
+                            s.set('errors', action.errors);
+                            s.set('requestDone', true);
+                            s.set('comment', action.comment.comment);
+                            s.set('user', action.comment.user);
+                        });
+                    }
+                case PENDING:
+                    if (action.context === 'form') {
+                        return state.withMutations(function (s) {
+                            s.set('requestDone', false);
+                            s.set('errors', []);
+                        });
+                    }
+                case ADD_COMMENT_SUCCESS:
+                    if (action.context === 'form') {
+                        return state.withMutations(function (s) {
+                            s.set('errors', []);
+                            s.set('requestDone', true);
+                            s.set('comment', '');
+                            s.set('user', action.comment.user);
+                        });
+                    }
+                case TYPING:
+                    return state.set(action.field, action.value);
+                default:
+                    return state;
+            }
+        }
+
+        var initialComments = Immutable.List([{ comment: 'From init', user: 'Could be anyone' }]);
+        var initialForm = Immutable.Map({ errors: ['Test Error from init'], requestDone: true, comment: '', user: '' });
+        var flux = {
+            //state related
+            getState: function(){
+                return this.state;
+            },
+            state: {
+                comments: initialComments,
+                form: initialForm
+            },
+            store: {comments: comments, form: form},
+            init: function () {
+                this.dispatch("@@INIT");
+            },
+
+            //action related
+            actions: {
+                ADD_COMMENT: addComment,
+                REMOVE_COMMENT: removeComment,
+                PENDING: pending,
+                TYPING: typing
+            },
+            actionCreators: function actionCreators() {
+                var actions = {};
+                Object.keys(this.actions).map(function (key) {
+                    actions[key] = function () { this.dispatch(this.actions[key].apply(this, arguments)) }.bind(this);
+                }.bind(this));
+                return actions;
+            },
+            handlers: [],
+            setHandler: function(fn){
+                this.handlers.push(fn);
+            },
+
+            //old state stuff
+            oldStates: [],
+            applyOldState: function(index){
+                var state = this.state;
+                this.state = this.oldStates[index].state;
+                this.handlers.map(function (fn) { fn(state);});
+            },
+            replayAction: function(index) {
+                var action = this.oldStates[index].action;
+                this.dispatch(action);
+            },
+            saveState: function(action, state){
+                //cheap copy
+                var stateCopy = {};
+                Object.keys(state).map(function(key){
+                    stateCopy[key] = state[key];
+                });
+                this.oldStates.push({ action: action, state: stateCopy});
+                console.log(action);
+                console.log(state);
+                console.log(this.oldStates.length - 1);
+            },
+
+            //dispatch
+            dispatch: function dispatch(action) {
+                Q.Promise.resolve(action).then(this.handleDispatch.bind(this), undefined, this.handleDispatch.bind(this));
+            },
+            handleDispatch: function (action) {
+                var state = this.state;
+                var store = this.store;
+                Object.keys(this.store).map(function (key) {
+                    state[key] = store[key](state[key], action);
+                });
+                this.handlers.map(function (fn) { fn(state); });
+                this.saveState(action, state);
+            }
+        };
+
+        flux.init();
+		
+		//React stuff
+		var UserImage = React.createClass({
+			buildGravatarURL: function(userName, size){
+				return "http://www.gravatar.com/avatar/" + md5(userName) + "?d=retro&s=" + size;
+			},
+			render: function () {
+				return React.DOM.img({ title: this.props.userName, alt: this.props.userName, src: this.buildGravatarURL(this.props.userName, this.props.size)}, null);
+			}
+		});
+
+        var Comment = React.createClass({
+            render: function () {
+                return React.DOM.div(null, [
+                    React.DOM.div(null, this.props.comment),
+                    React.DOM.span(null, [
+					React.createElement(UserImage, { userName: this.props.user, size: 25}),
+					this.props.user])
+                ]);
+            }
+        });
+
+        var CommentList = React.createClass({
+            removeHandler: function(index){
+                this.props.removeHandler(index);
+            },
+            render: function () {
+                return React.DOM.ul(null, 
+                    this.props.comments.map(function (c, index) {
+                        return React.DOM.li({ key: index, onClick: this.removeHandler.bind(this, index) }, React.createElement(Comment, { comment: c.comment, user: c.user }));
+                    }.bind(this))
+                );
+            }
+        });
+
+        var CommentForm = React.createClass({
+            formSubmitHandler: function(e){
+                e.preventDefault();
+                this.props.fluxHandlers.ADD_COMMENT({ comment: React.findDOMNode(this.refs.comment).value, user: React.findDOMNode(this.refs.user).value}, 'form');
+            },
+            commentHandler: function(e){
+                this.props.fluxHandlers.TYPING("comment", e.target.value);
+            },
+            userHandler: function(e){
+                this.props.fluxHandlers.TYPING("user", e.target.value);
+            },
+            render: function () {
+                var buttonText = this.props.form.get('requestDone') === false ? 'Leaving a Comment Now' : 'Leave a Comment';
+
+                return React.DOM.form({ onSubmit: this.formSubmitHandler }, [
+                    this.props.form.get('errors').map(function (e) {
+                        return React.DOM.div(null, e);
+                    }),
+                    React.DOM.input({ type: "input", ref: "comment", placeholder: "Comment", value: this.props.form.get('comment'), onChange: this.commentHandler }, null),
+                    React.DOM.input({ type: "input", ref: "user", placeholder: "User", value: this.props.form.get('user'), onChange: this.userHandler }, null),
+                    React.DOM.button({ type: "submit" }, buttonText)
+                ]);
+            }
+        });
+
+        var CommentComponent = React.createClass({
+            componentWillMount: function(){
+                this.props.flux.setHandler(this.stateChange);
+            },
+            stateChange: function (newState) {
+                this.setState(newState);
+            },
+            render: function () {
+                return React.DOM.div(null, [
+                    React.createElement(CommentForm, { key: "commentForm", fluxHandlers: this.props.flux.actionCreators(), form: this.props.flux.getState().form }),
+                    React.createElement(CommentList, { key: "commentList", comments: this.props.flux.getState().comments, removeHandler: this.props.flux.actionCreators().REMOVE_COMMENT })
+                ]);
+            }
+        });
+
+        var root = React.render(React.createElement(CommentComponent, { flux: flux }), document.getElementById("react-root"));
+        
+
+        setTimeout(function () {
+            flux.dispatch(addCommentSuccess({comment: 'From the setTimeout', user: 'JavaScript'}, 'ajax'));
+        }, 3000);
+	</script>
+</body>
+</html>

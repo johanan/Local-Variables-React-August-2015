@@ -1,0 +1,28 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Props!</title>
+    <script src="build/react.js"></script>
+    <script src="build/JSXTransformer.js"></script>
+    <script src="build/md5.js"></script>
+</head>
+<body>
+    <div id="react-root"></div>
+<script type="text/javascript">
+    var UserImage = React.createClass({
+        buildGravatarURL: function(userName, size){
+            return "http://www.gravatar.com/avatar/" + md5(userName) + "?d=retro&s=" + size;
+        },
+        render: function () {
+            return React.DOM.img({ title: this.props.userName, alt: this.props.userName, src: this.buildGravatarURL(this.props.userName, this.props.size)}, null);
+        }
+    });
+
+    React.render(React.createElement(UserImage, { userName: "josh", size: "100" }), document.getElementById("react-root"));
+
+	//props change require a re-render
+    setTimeout(function () { React.render(React.createElement(UserImage, { userName: "james", size: "50" }), document.getElementById("react-root")); }, 5000);
+</script>
+</body>
+</html>
