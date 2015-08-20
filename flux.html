@@ -106,14 +106,14 @@
                             s.set('comment', action.comment.comment);
                             s.set('user', action.comment.user);
                         });
-                    }
+                    }else return state;
                 case PENDING:
                     if (action.context === 'form') {
                         return state.withMutations(function (s) {
                             s.set('requestDone', false);
                             s.set('errors', []);
                         });
-                    }
+                    }else return state;
                 case ADD_COMMENT_SUCCESS:
                     if (action.context === 'form') {
                         return state.withMutations(function (s) {
@@ -122,7 +122,7 @@
                             s.set('comment', '');
                             s.set('user', action.comment.user);
                         });
-                    }
+                    }else return state;
                 case TYPING:
                     return state.set(action.field, action.value);
                 default:
